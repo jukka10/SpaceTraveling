@@ -1,10 +1,10 @@
+import Head from 'next/head';
+import Primic from '@prismicio/client';
+import ptBR from 'date-fns/locale/pt-BR';
 import { useState } from 'react';
 import { GetStaticProps } from 'next';
-import Head from 'next/head';
 import { FiCalendar, FiUser } from 'react-icons/fi';
-import Primic from '@prismicio/client';
 import { format } from 'date-fns';
-import ptBR from 'date-fns/locale/pt-BR';
 import { RichText } from 'prismic-dom';
 
 import { getPrismicClient } from '../services/prismic';
@@ -40,7 +40,7 @@ export default function Home({ postsPagination }: HomeProps) {
       .then(data => {
         const newPosts = data.results.map(post => {
           return {
-            slug: post.uid,
+            uid: post.uid,
             first_publication_date: format(
               new Date(post.first_publication_date),
               'dd MMMM yyyy',
@@ -67,7 +67,11 @@ export default function Home({ postsPagination }: HomeProps) {
       </Head>
       <main className={styles.container}>
         {posts.map(post => (
-          <a key={post.uid} href="/" className={styles.content}>
+          <a
+            key={post.uid}
+            href={`/post/${post.uid}`}
+            className={styles.content}
+          >
             <strong>{post.data.title}</strong>
             <p>{post.data.subtitle}</p>
 
@@ -104,7 +108,7 @@ export const getStaticProps: GetStaticProps = async () => {
 
   const posts = postsResponse.results.map(post => {
     return {
-      slug: post.uid,
+      uid: post.uid,
       first_publication_date: format(
         new Date(post.first_publication_date),
         'dd MMMM yyyy',
