@@ -1,4 +1,11 @@
+import { useState } from 'react';
 import { GetStaticProps } from 'next';
+import Head from 'next/head';
+import { FiCalendar, FiUser } from 'react-icons/fi';
+import Primic from '@prismicio/client';
+import { format } from 'date-fns';
+import ptBR from 'date-fns/locale/pt-BR';
+import { RichText } from 'prismic-dom';
 
 import { getPrismicClient } from '../services/prismic';
 
@@ -24,13 +31,98 @@ interface HomeProps {
   postsPagination: PostPagination;
 }
 
-// export default function Home() {
-//   // TODO
-// }
+export default function Home({ postsPagination }: HomeProps) {
+  const [posts, setPosts] = useState<Post[]>(postsPagination.results);
 
-// export const getStaticProps = async () => {
-//   // const prismic = getPrismicClient();
-//   // const postsResponse = await prismic.query(TODO);
+  function handleLoadMore() {
+    fetch(postsPagination.next_page)
+      .then(response => response.json())
+      .then(data => {
+        const newPosts = data.results.map(post => {
+          return {
+            slug: post.uid,
+            first_publication_date: format(
+              new Date(post.first_publication_date),
+              'dd MMMM yyyy',
+              {
+                locale: ptBR,
+              }
+            ),
+            data: {
+              title: RichText.asText(post.data.title),
+              subtitle: post.data.subtitle,
+              author: post.data.author,
+            },
+          };
+        });
 
-//   // TODO
-// };
+        setPosts([...posts, ...newPosts]);
+      });
+  }
+
+  return (
+    <>
+      <Head>
+        <title>Home | spacetravling</title>
+      </Head>
+      <main className={styles.container}>
+        {posts.map(post => (
+          <a key={post.uid} href="/" className={styles.content}>
+            <strong>{post.data.title}</strong>
+            <p>{post.data.subtitle}</p>
+
+            <div className={styles.postInfo}>
+              <div>
+                <FiCalendar size={20} />
+                <time>{post.first_publication_date}</time>
+              </div>
+
+              <div>
+                <FiUser size={20} />
+                <p>{post.data.author}</p>
+              </div>
+            </div>
+          </a>
+        ))}
+        <button onClick={handleLoadMore} type="button">
+          Carregar mais posts
+        </button>
+      </main>
+    </>
+  );
+}
+
+export const getStaticProps: GetStaticProps = async () => {
+  const prismic = getPrismicClient();
+  const postsResponse = await prismic.query(
+    [Primic.Predicates.at('document.type', 'post')],
+    {
+      fetch: ['post.title', 'post.subtitle', 'post.author'],
+      pageSize: 1,
+    }
+  );
+
+  const posts = postsResponse.results.map(post => {
+    return {
+      slug: post.uid,
+      first_publication_date: format(
+        new Date(post.first_publication_date),
+        'dd MMMM yyyy',
+        {
+          locale: ptBR,
+        }
+      ),
+      data: {
+        title: RichText.asText(post.data.title),
+        subtitle: post.data.subtitle,
+        author: post.data.author,
+      },
+    };
+  });
+
+  return {
+    props: {
+      postsPagination: { next_page: postsResponse.next_page, results: posts },
+    },
+  };
+};
