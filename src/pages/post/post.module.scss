@@ -39,18 +39,36 @@
   }
 
   .content {
-    strong,
-    h2,
-    h3,
-    h4 {
-      font-size: 2rem;
+    h2 {
+      font-size: 2.25rem;
       line-height: 1.5rem;
+      color: var(--heading);
+      margin: 3rem 0;
     }
 
-    div {
+    p,
+    ul {
+      margin: 1.5rem;
+    }
+
+    ul {
+      padding-left: 1.5rem;
+
+      li {
+        margin: 0.5rem 0;
+      }
+    }
+
+    p,
+    span,
+    a,
+    ul {
       font-size: 1.125rem;
       color: var(--body);
-      margin-top: 3rem;
+    }
+
+    a {
+      color: var(--pink);
     }
   }
 }

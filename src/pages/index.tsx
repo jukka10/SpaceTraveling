@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import Link from 'next/link';
 import Primic from '@prismicio/client';
 import ptBR from 'date-fns/locale/pt-BR';
 import { useState } from 'react';
@@ -9,7 +10,7 @@ import { RichText } from 'prismic-dom';
 
 import { getPrismicClient } from '../services/prismic';
 
-import commonStyles from '../styles/common.module.scss';
+//import commonStyles from '../styles/common.module.scss';
 import styles from './home.module.scss';
 
 interface Post {
@@ -33,21 +34,16 @@ interface HomeProps {
 
 export default function Home({ postsPagination }: HomeProps) {
   const [posts, setPosts] = useState<Post[]>(postsPagination.results);
+  const [nextPage, setNextPage] = useState(postsPagination.next_page);
 
   function handleLoadMore() {
-    fetch(postsPagination.next_page)
+    fetch(nextPage)
       .then(response => response.json())
       .then(data => {
         const newPosts = data.results.map(post => {
           return {
             uid: post.uid,
-            first_publication_date: format(
-              new Date(post.first_publication_date),
-              'dd MMMM yyyy',
-              {
-                locale: ptBR,
-              }
-            ),
+            first_publication_date: post.first_publication_date,
             data: {
               title: RichText.asText(post.data.title),
               subtitle: post.data.subtitle,
@@ -56,6 +52,7 @@ export default function Home({ postsPagination }: HomeProps) {
           };
         });
 
+        setNextPage(data.next_page);
         setPosts([...posts, ...newPosts]);
       });
   }
@@ -67,30 +64,38 @@ export default function Home({ postsPagination }: HomeProps) {
       </Head>
       <main className={styles.container}>
         {posts.map(post => (
-          <a
-            key={post.uid}
-            href={`/post/${post.uid}`}
-            className={styles.content}
-          >
-            <strong>{post.data.title}</strong>
-            <p>{post.data.subtitle}</p>
+          <Link key={post.uid} href={`/post/${post.uid}`}>
+            <a className={styles.content}>
+              <strong>{post.data.title}</strong>
+              <p>{post.data.subtitle}</p>
 
-            <div className={styles.postInfo}>
-              <div>
-                <FiCalendar size={20} />
-                <time>{post.first_publication_date}</time>
-              </div>
+              <div className={styles.postInfo}>
+                <div>
+                  <FiCalendar size={20} />
+                  <time>
+                    {format(
+                      new Date(post.first_publication_date),
+                      'dd MMM yyyy',
+                      {
+                        locale: ptBR,
+                      }
+                    )}
+                  </time>
+                </div>
 
-              <div>
-                <FiUser size={20} />
-                <p>{post.data.author}</p>
+                <div>
+                  <FiUser size={20} />
+                  <p>{post.data.author}</p>
+                </div>
               </div>
-            </div>
-          </a>
+            </a>
+          </Link>
         ))}
-        <button onClick={handleLoadMore} type="button">
-          Carregar mais posts
-        </button>
+        {nextPage && (
+          <button onClick={handleLoadMore} type="button">
+            Carregar mais posts
+          </button>
+        )}
       </main>
     </>
   );
@@ -109,13 +114,7 @@ export const getStaticProps: GetStaticProps = async () => {
   const posts = postsResponse.results.map(post => {
     return {
       uid: post.uid,
-      first_publication_date: format(
-        new Date(post.first_publication_date),
-        'dd MMMM yyyy',
-        {
-          locale: ptBR,
-        }
-      ),
+      first_publication_date: post.first_publication_date,
       data: {
         title: RichText.asText(post.data.title),
         subtitle: post.data.subtitle,

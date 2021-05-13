@@ -15,7 +15,7 @@ export function readTime(content: ContentProps[]) {
     return numberWordsBody + numberWordsHeading;
   });
 
-  const time = (result[0] / 200).toPrecision(1);
+  const time = result[0] / 200;
 
-  return `${time} min`;
+  return `${Math.ceil(time + 3)} min`;
 }

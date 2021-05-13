@@ -1,13 +1,13 @@
+import Head from 'next/head';
+import Prismic from '@prismicio/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { GetStaticPaths, GetStaticProps } from 'next';
-import Head from 'next/head';
-import Prismic from '@prismicio/client';
+import { useRouter } from 'next/router';
 import { RichText } from 'prismic-dom';
 import { FiCalendar, FiUser, FiClock } from 'react-icons/fi';
 
 import { getPrismicClient } from '../../services/prismic';
-
 import { readTime } from '../../utils/readTime';
 import styles from './post.module.scss';
 
@@ -15,9 +15,7 @@ interface Post {
   first_publication_date: string | null;
   data: {
     title: string;
-    banner: {
-      url: string;
-    };
+    banner: { url: string };
     author: string;
     content: {
       heading: string;
@@ -34,20 +32,31 @@ interface PostProps {
 
 export default function Post({ post }: PostProps) {
   const time = readTime(post.data.content);
+  const router = useRouter();
+
+  if (router.isFallback) {
+    return <div>Carregando...</div>;
+  }
 
   return (
     <>
       <Head>
-        <title>{post.data.title} | spacetraveling</title>
+        <title>{`${post.data.title} | spacetraveling`}</title>
       </Head>
+
       <img className={styles.banner} src={post.data.banner.url} alt="banner" />
+
       <article className={styles.container}>
         <strong className={styles.title}>{post.data.title}</strong>
 
         <div className={styles.postInfo}>
           <div>
             <FiCalendar size={20} />
-            <time>{post.first_publication_date}</time>
+            <time>
+              {format(new Date(post.first_publication_date), 'dd MMM yyyy', {
+                locale: ptBR,
+              })}
+            </time>
           </div>
 
           <div>
@@ -62,11 +71,11 @@ export default function Post({ post }: PostProps) {
         </div>
 
         <section className={styles.content}>
-          {post.data.content.map(({ heading, body }) => (
-            <div>
-              <strong>{heading}</strong>
-
+          {post.data.content.map(({ heading, body }, index) => (
+            <div key={String(index)}>
+              <h2>{heading}</h2>
               <div
+                className={styles.boxContent}
                 dangerouslySetInnerHTML={{ __html: RichText.asHtml(body) }}
               />
             </div>
@@ -99,24 +108,22 @@ export const getStaticProps: GetStaticProps = async context => {
 
   const { title, author, banner, content } = response.data;
 
+  const Title = Array.isArray(title) ? RichText.asText(title) : title;
+
   const post = {
-    first_publication_date: format(
-      new Date(response.first_publication_date),
-      'dd MMMM yyyy',
-      {
-        locale: ptBR,
-      }
-    ),
+    uid: response.uid,
+    first_publication_date: response.first_publication_date,
     data: {
-      title: RichText.asText(title),
-      banner: {
-        url: banner.url,
-      },
+      title: Title,
+      banner: { url: banner.url },
       author,
-      content: content.map(({ heading, body }) => ({
-        heading,
-        body,
-      })),
+      content: content.map(({ heading, body }) => {
+        return {
+          heading,
+          body,
+        };
+      }),
+      subtitle: response.data.subtitle,
     },
   };
 
