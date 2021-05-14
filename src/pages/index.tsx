@@ -6,11 +6,10 @@ import { useState } from 'react';
 import { GetStaticProps } from 'next';
 import { FiCalendar, FiUser } from 'react-icons/fi';
 import { format } from 'date-fns';
-import { RichText } from 'prismic-dom';
 
 import { getPrismicClient } from '../services/prismic';
 
-//import commonStyles from '../styles/common.module.scss';
+// import commonStyles from '../styles/common.module.scss';
 import styles from './home.module.scss';
 
 interface Post {
@@ -36,25 +35,26 @@ export default function Home({ postsPagination }: HomeProps) {
   const [posts, setPosts] = useState<Post[]>(postsPagination.results);
   const [nextPage, setNextPage] = useState(postsPagination.next_page);
 
-  function handleLoadMore() {
-    fetch(nextPage)
-      .then(response => response.json())
-      .then(data => {
-        const newPosts = data.results.map(post => {
-          return {
-            uid: post.uid,
-            first_publication_date: post.first_publication_date,
-            data: {
-              title: RichText.asText(post.data.title),
-              subtitle: post.data.subtitle,
-              author: post.data.author,
-            },
-          };
-        });
+  async function handleLoadMorePosts() {
+    if (nextPage === null) {
+      return;
+    }
 
-        setNextPage(data.next_page);
-        setPosts([...posts, ...newPosts]);
-      });
+    const response = await fetch(nextPage);
+    const postsResult = await response.json();
+
+    const newPosts = postsResult.results.map(post => ({
+      uid: post.uid,
+      first_publication_date: post.first_publication_date,
+      data: {
+        title: post.data.title,
+        subtitle: post.data.subtitle,
+        author: post.data.author,
+      },
+    }));
+
+    setNextPage(postsResult.next_page);
+    setPosts([...posts, ...newPosts]);
   }
 
   return (
@@ -92,7 +92,7 @@ export default function Home({ postsPagination }: HomeProps) {
           </Link>
         ))}
         {nextPage && (
-          <button onClick={handleLoadMore} type="button">
+          <button onClick={handleLoadMorePosts} type="button">
             Carregar mais posts
           </button>
         )}
@@ -116,7 +116,7 @@ export const getStaticProps: GetStaticProps = async () => {
       uid: post.uid,
       first_publication_date: post.first_publication_date,
       data: {
-        title: RichText.asText(post.data.title),
+        title: post.data.title,
         subtitle: post.data.subtitle,
         author: post.data.author,
       },
