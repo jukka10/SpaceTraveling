@@ -38,6 +38,13 @@
     }
   }
 
+  .lastDate {
+    color: var(--info);
+    font-style: oblique;
+    display: block;
+    margin-top: -2rem;
+  }
+
   .content {
     h2 {
       font-size: 2.25rem;
@@ -69,6 +76,41 @@
 
     a {
       color: var(--pink);
+    }
+  }
+  border-bottom: 1px solid var(--info);
+}
+
+.otherPosts {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 4rem 0;
+
+  nav {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+
+    span {
+      display: block;
+      font-size: 1.4rem;
+      color: var(--heading);
+    }
+
+    a {
+      display: block;
+      margin-top: 0.625rem;
+      font-size: 1.1rem;
+      color: var(--pink);
+      transition: filter 4.2;
+
+      &:hover {
+        filter: brightness(0.7);
+      }
+    }
+
+    .boxNextPost a {
+      text-align: right;
     }
   }
 }
