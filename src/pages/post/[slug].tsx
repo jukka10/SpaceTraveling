@@ -11,7 +11,6 @@ import { FiCalendar, FiUser, FiClock } from 'react-icons/fi';
 import { getPrismicClient } from '../../services/prismic';
 import { readTime } from '../../utils/readTime';
 import styles from './post.module.scss';
-import { useEffect } from 'react';
 
 interface Post {
   uid: string;
@@ -32,23 +31,12 @@ interface Post {
 
 interface PostProps {
   post: Post;
+  preview: boolean;
 }
 
-export default function Post({ post }: PostProps) {
+export default function Post({ post, preview }: PostProps) {
   const time = readTime(post.data.content);
   const router = useRouter();
-
-  useEffect(() => {
-    const script = document.createElement('script');
-    const anchor = document.getElementById('inject-comments-for-uterances');
-    script.setAttribute('src', 'https://utteranc.es/client.js');
-    script.setAttribute('crossorigin', 'anonymous');
-    script.setAttribute('async', true);
-    script.setAttribute('repo', '[jukka10/ignite-desafio05]');
-    script.setAttribute('issue-term', 'pathname');
-    script.setAttribute('theme', 'github-light');
-    anchor.appendChild(script);
-  }, []);
 
   if (router.isFallback) {
     return <div>Carregando...</div>;
@@ -120,7 +108,30 @@ export default function Post({ post }: PostProps) {
           </div>
         </nav>
       </aside>
-      <div id="inject-comments-for-uterances"></div>
+      <section
+        ref={element => {
+          if (!element) return;
+
+          const script = document.createElement('script');
+          script.src = 'https://utteranc.es/client.js';
+          script.async = true;
+          script.crossOrigin = 'anonymous';
+          script.setAttribute('repo', 'jukka10/ignite-desafio05');
+          script.setAttribute('label', 'blog-comment');
+          script.setAttribute('issue-term', 'pathname');
+          script.setAttribute('theme', 'github-dark');
+
+          element.appendChild(script);
+        }}
+        className={styles.boxComment}
+      />
+      {preview && (
+        <aside>
+          <Link href="/api/exit-preview">
+            <a>Sair do modo Preview</a>
+          </Link>
+        </aside>
+      )}
     </>
   );
 }
@@ -139,13 +150,19 @@ export const getStaticPaths: GetStaticPaths = async () => {
   };
 };
 
-export const getStaticProps: GetStaticProps = async context => {
-  const { slug } = context.params;
+export const getStaticProps: GetStaticProps = async ({
+  params,
+  preview = false,
+  previewData,
+}) => {
+  const { slug } = params;
 
   const prismic = getPrismicClient();
-  const response = await prismic.getByUID('post', String(slug), {});
+  const response = await prismic.getByUID('post', String(slug), {
+    ref: previewData?.ref ?? null,
+  });
 
-  const { title, author, banner, content } = response.data;
+  const { title, author, banner, content, subtitle } = response.data;
 
   const Title = Array.isArray(title) ? RichText.asText(title) : title;
 
@@ -163,12 +180,12 @@ export const getStaticProps: GetStaticProps = async context => {
           body,
         };
       }),
-      subtitle: response.data.subtitle,
+      subtitle,
     },
   };
 
   return {
-    props: { post },
+    props: { post, preview },
     revalidate: 60 * 60, // 1 hora
   };
 };
